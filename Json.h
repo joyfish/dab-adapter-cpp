@@ -429,8 +429,16 @@ namespace DAB
             return *this;
         }
 
+#if 1 // __cplusplus == 201703L
+         template <typename T>
+         using remove_cvref_t = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
+
+         template< class T, typename std::enable_if_t<((std::is_arithmetic_v<T> || std::is_enum_v<T>)) &&
+                     !std::is_same_v<jsonElement, remove_cvref_t<T>>>* = nullptr>
+#else
         // assignment operator for arithmetic types (bool, int, double)
         template< class T, typename std::enable_if_t<((std::is_arithmetic_v < T > || std::is_enum_v < T > )) && !std::is_same_v < jsonElement, typename std::remove_cvref_t<T>::type>> * = nullptr>
+#endif
 
         jsonElement &operator= ( T const &v )
         {

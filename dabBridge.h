@@ -15,6 +15,8 @@
 
 #pragma once
 
+#include <string>
+#include <cstring>
 #include "dabClient.h"
 #include <cassert>
 
@@ -50,6 +52,7 @@ namespace DAB
         virtual jsonElement dispatch( jsonElement const &json ) {
             if (json.has("topic")) {
                 std::string const &topic = json["topic"];
+                const char *topic_cstr = topic.c_str();    
 
                 if ( topic == "dab/discovery")
                 {
@@ -64,15 +67,20 @@ namespace DAB
                     }
                     // return as a response our first class's response
                     return instances.begin()->second->dispatch ( json );
-                } else if (topic.starts_with("dab/"))
+                } else if (starts_with(topic_cstr, "dab/"))
                 {
-                    auto slashPos = std::string_view(topic.begin() + 4, topic.end()).find_first_of('/');
+                    // auto slashPos = std::string_view(topic.begin() + 4, topic.end()).find_first_of('/');
+                    auto slashPos = std::string_view(topic.c_str() + 4, topic.size() - 4).find_first_of('/');
+
                     if (slashPos == std::string::npos) {
                         throw DAB::dabException ( 400, "topic is malformed" );
                     }
 
                     // the deviceId is extracted from "dab/<deviceId>/<method>"
-                    auto deviceId = std::string_view(topic.begin() + 4, topic.begin() + 4 + (int)slashPos);
+                    // auto deviceId = std::string_view(topic.begin() + 4, topic.begin() + 4 + (int)slashPos);
+                    std::string deviceIdStr(topic.begin() + 4, topic.begin() + 4 + static_cast<std::ptrdiff_t>(slashPos));
+                    auto deviceId = std::string_view(deviceIdStr.c_str(), deviceIdStr.size());
+
                     auto it = instances.find(deviceId);
                     if (it != instances.end()) {
                         // now call the dabInterface associated with the deviceId;
@@ -100,6 +108,17 @@ namespace DAB
             topics.push_back( "dab/discovery");
             return topics;
         }
+
+    	bool starts_with(const char*string, const char* pattern)
+    	{
+    		while (*pattern && *string == *pattern)
+    		{
+    			string++;
+    			pattern++;
+    		}
+
+    		return *pattern == 0;
+    	}
 
         // This iterates through all the class's and sets the mqtt publish callback so that the class's can publish notifications (non-request/response)
         template<typename F>

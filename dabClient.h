@@ -25,6 +25,8 @@
 #include <string>
 #include <memory>
 #include <utility>
+#include <atomic>
+
 
 #include "Json.h"
 
